@@ -55,3 +55,15 @@ Newest at the bottom of each section. Format: what we chose, why, and what it co
 | L5 | DRF's `ModelSerializer` auto-adds a `UniqueTogetherValidator` for a `UniqueConstraint`, which made `council_id` and `registration_no` required on every partial PATCH, breaking "Save draft". Fix: `validators = []` on the serializer, duplicate check in `ProfileService`, DB constraint kept as the backstop. | When a serializer behaves oddly on partial updates, look at validators generated from model constraints first. |
 | L6 | Registry simulation takes an injectable `rng`, so tests force a pass and a fail instead of relying on the 80% randomness. | Randomness in a service gets a seam. |
 | L7 | Reference data (councils, specialities) is seeded by a data migration, so every environment, including the test DB, has it. | No fixtures or management commands to forget. |
+
+## Scheduling and slots
+
+| # | Decision | Why / trade-off |
+|---|---|---|
+| S1 | Slot generation **reconciles** instead of regenerating: it compares desired slots (from windows + exceptions) with the existing future slots and only creates, renumbers or deletes the difference. It runs on every schedule/exception change and nightly (Celery). | Idempotent (a second run creates nothing), cheap, and safe to run any time. |
+| S2 | A slot with an active booking is **never deleted, moved or overlapped**. It is kept and reported as a conflict (`window_removed` or `day_blocked`). New slots that would overlap a kept one are skipped (a slot-length change leaves a gap rather than a double booking). | Rule S6 of the PRD: a schedule change must not silently cancel bookings. |
+| S3 | Slots exist only for **approved** doctors. Before approval the schedule is saved but nothing is generated; approval (Django admin action, later) calls the same generator. | Unverified doctors must never show up anywhere public. |
+| S4 | Schedule saves, exceptions and the nightly job hold a `SELECT ... FOR UPDATE` on the clinic row. Deleting slots re-locks them and re-checks for bookings that raced in. | A hold placed during a schedule save can never hit an FK error or lose its slot. |
+| S5 | A partial block (exception with a window) skips those slots but they still count in `seq` and `token`. | Numbers stay stable for the patients and the doctor. |
+| S6 | Unblocking is `DELETE /doctor/slots/{id}/block`; blocking is `POST` on the same resource. | Default viewset actions only (A2); contract updated. |
+| S7 | Windows are normalised in the service: slot length comes from minutes, or from count (must divide evenly), or the platform default; windows that do not divide are rejected, never truncated. Overlaps on the same weekday are rejected (D3). | A doctor never gets a silent half-slot. |

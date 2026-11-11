@@ -46,6 +46,7 @@ Step-by-step with the sole developer: design (DB + API) -> FE subagent validates
 - [x] BE step 1: project, settings, all models + migrations (generated, not applied), OTP + JWT auth
 - [x] Postgres + Redis installed, migrations applied, 18 tests pass (OTP, auth API, DB constraints)
 - [x] Doctor onboarding: profile (partial save), documents, submit + simulated registry, councils, specialities (27 tests)
+- [x] Clinics, weekly schedule, exceptions (block day / extra hours), slot generation + nightly task, manual slot block, owner day view (43 tests)
 - [ ] **Milestone: ~50% backend + FE happy path** = onboarding, clinics + schedule + slot generation, public search + slot grid, hold -> details -> Razorpay order -> verify + webhook -> confirmed. Hardcoded pieces allowed in the FE until MVP.
 - [ ] After milestone: CI/CD, deployment, env setup. Then: cancel/reschedule/refunds, doctor dashboard + conflicts, notifications, Django admin actions, reconcile
 - [ ] FE

@@ -73,3 +73,22 @@ flowchart LR
     RC --> I[(reconciliation_issue)]
     I --> ADM[Django admin]
 ```
+
+## 5. Schedule change -> slots (built)
+
+```mermaid
+flowchart TD
+    A[PUT schedule / POST exception / nightly task] --> L[lock clinic row]
+    L --> N[ScheduleService: normalise + validate windows]
+    N --> G[SlotGenerationService.generate]
+    G --> AP{doctor approved?}
+    AP -->|no| Z[nothing generated]
+    AP -->|yes| D[desired slots for next 30 days<br/>windows + extra - blocked]
+    D --> R[compare with existing future slots]
+    R --> K[same start and end: keep, renumber if unbooked]
+    R --> X[no longer wanted]
+    X --> U{has active booking?}
+    U -->|no| DEL[delete under row lock]
+    U -->|yes| C[keep + report conflict<br/>window_removed / day_blocked]
+    R --> NEW[missing: create unless it overlaps a kept slot]
+```
