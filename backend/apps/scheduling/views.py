@@ -1,6 +1,7 @@
 from datetime import date
 
 from rest_framework import mixins, status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.exceptions import ApiError
@@ -14,6 +15,7 @@ from .serializers import (
     ScheduleInSerializer,
     WindowOutSerializer,
 )
+from .services.availability_service import AvailabilityService
 from .services.clinic_service import ClinicService
 from .services.schedule_service import ScheduleService
 from .services.slot_generation_service import GenerationResult
@@ -115,3 +117,21 @@ class SlotBlockViewSet(viewsets.GenericViewSet):
     def destroy(self, request, slot_id: int):
         self.service.unblock(user=request.user, slot_id=slot_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PublicSlotGridViewSet(viewsets.GenericViewSet):
+    """GET /doctors/{doctor_id}/slots?clinic_id=&from=&days=. Public; a Bearer token (optional) personalises it."""
+    permission_classes = [AllowAny]
+    serializer_class = None
+    service = AvailabilityService()
+
+    def list(self, request, doctor_id: int):
+        q = request.query_params
+        try:
+            start = date.fromisoformat(q["from"]) if "from" in q else date.today()
+            clinic_id, days = int(q["clinic_id"]), int(q.get("days", 7))
+        except (KeyError, ValueError) as e:
+            raise ApiError("VALIDATION_ERROR", "clinic_id (int), from (YYYY-MM-DD) and days (int) are required/valid",
+                           status_code=400) from e
+        return Response(self.service.grid(doctor_id=doctor_id, clinic_id=clinic_id, start_date=start, days=days,
+                                          viewer=request.user))

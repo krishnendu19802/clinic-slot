@@ -3,6 +3,8 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from apps.accounts.views import LogoutViewSet, MeViewSet, OtpRequestViewSet, OtpVerifyViewSet, RefreshViewSet
+from apps.core.views import PolicyViewSet
+from apps.doctors.public_views import PublicDoctorViewSet
 from apps.doctors.views import (
     CouncilViewSet,
     DoctorDocumentViewSet,
@@ -14,6 +16,7 @@ from apps.scheduling.views import (
     ClinicViewSet,
     DoctorSlotViewSet,
     ExceptionViewSet,
+    PublicSlotGridViewSet,
     ScheduleViewSet,
     SlotBlockViewSet,
 )
@@ -24,6 +27,8 @@ router.register("auth/otp/verify", OtpVerifyViewSet, basename="otp-verify")
 router.register("auth/refresh", RefreshViewSet, basename="auth-refresh")
 router.register("auth/logout", LogoutViewSet, basename="auth-logout")
 
+router.register("policy", PolicyViewSet, basename="policy")
+router.register("doctors", PublicDoctorViewSet, basename="doctor")
 router.register("councils", CouncilViewSet, basename="council")
 router.register("specialities", SpecialityViewSet, basename="speciality")
 router.register("doctor/profile/submit", DoctorSubmissionViewSet, basename="doctor-submit")
@@ -31,6 +36,7 @@ router.register("doctor/clinics", ClinicViewSet, basename="doctor-clinic")
 router.register("doctor/documents", DoctorDocumentViewSet, basename="doctor-document")
 
 urlpatterns = [
+    path("doctors/<int:doctor_id>/slots", PublicSlotGridViewSet.as_view({"get": "list"})),
     path("doctor/clinics/<int:clinic_id>/schedule", ScheduleViewSet.as_view({"get": "retrieve", "put": "update"})),
     path("doctor/clinics/<int:clinic_id>/exceptions", ExceptionViewSet.as_view({"post": "create"})),
     path("doctor/clinics/<int:clinic_id>/exceptions/<int:pk>", ExceptionViewSet.as_view({"delete": "destroy"})),
