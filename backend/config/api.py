@@ -13,6 +13,7 @@ from apps.doctors.views import (
     DoctorSubmissionViewSet,
     SpecialityViewSet,
 )
+from apps.payments.views import BookingPayViewSet, PaymentVerifyViewSet, RazorpayWebhookViewSet
 from apps.scheduling.views import (
     ClinicViewSet,
     DoctorSlotViewSet,
@@ -30,6 +31,7 @@ router.register("auth/logout", LogoutViewSet, basename="auth-logout")
 
 router.register("bookings/active-holds", ActiveHoldViewSet, basename="active-hold")  # before bookings/{pk}
 router.register("bookings", BookingViewSet, basename="booking")
+router.register("webhooks/razorpay", RazorpayWebhookViewSet, basename="razorpay-webhook")
 router.register("policy", PolicyViewSet, basename="policy")
 router.register("doctors", PublicDoctorViewSet, basename="doctor")
 router.register("councils", CouncilViewSet, basename="council")
@@ -39,6 +41,8 @@ router.register("doctor/clinics", ClinicViewSet, basename="doctor-clinic")
 router.register("doctor/documents", DoctorDocumentViewSet, basename="doctor-document")
 
 urlpatterns = [
+    path("bookings/<int:booking_id>/pay", BookingPayViewSet.as_view({"post": "create"})),
+    path("bookings/<int:booking_id>/payment/verify", PaymentVerifyViewSet.as_view({"post": "create"})),
     path("bookings/<int:booking_id>/release", BookingReleaseViewSet.as_view({"post": "create"})),
     path("doctors/<int:doctor_id>/slots", PublicSlotGridViewSet.as_view({"get": "list"})),
     path("doctor/clinics/<int:clinic_id>/schedule", ScheduleViewSet.as_view({"get": "retrieve", "put": "update"})),

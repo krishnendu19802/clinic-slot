@@ -42,7 +42,7 @@ sequenceDiagram
     API-->>FE: new access, rotated refresh cookie
 ```
 
-## 3. Booking: hold -> pay -> confirm (planned)
+## 3. Booking: hold -> pay -> confirm (built; gateway is a stub)
 
 ```mermaid
 flowchart TD
@@ -62,7 +62,7 @@ flowchart TD
     C -->|8 min, no payment| X[expired: lazy in queries,<br/>swept by beat tick]
 ```
 
-## 4. Background work (planned)
+## 4. Background work (nightly slots built, `tick` sweeps holds; reminders/reconcile planned)
 
 ```mermaid
 flowchart LR

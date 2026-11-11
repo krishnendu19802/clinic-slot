@@ -79,3 +79,14 @@ Newest at the bottom of each section. Format: what we chose, why, and what it co
 | B5 | `POST /bookings` is idempotent per slot (200 with the same booking, 201 for a new one). `bookings/active-holds` is registered before `bookings/{pk}` so the router does not read it as an id. | The FE can safely retry or resume after a reload. |
 | B6 | A hold that is released or replaced becomes `expired` (not `cancelled`), and any open payment order on it is expired. Release is refused with 409 `PAYMENT_IN_PROGRESS` once a payment is authorized/captured. | `cancelled` is reserved for real cancellations (shown in the Cancelled tab, refund rules apply). |
 | L8 | `r.data` in DRF tests holds Python objects for `SerializerMethodField` datetimes but strings for model-field datetimes. | Parse with `parse_datetime` before doing date maths in tests. |
+
+## Payments
+
+| # | Decision | Why / trade-off |
+|---|---|---|
+| P1 | **Razorpay is a hardcoded stub until the milestone** (owner's call): `PaymentGateway` creates local order ids and every signature verifies. Everything around it (orders, payments, idempotent settle, grace, refunds rows, webhook storage) is the real design. | One file (`payments/gateway.py`) to swap for `razorpay.Client`. **Risk:** until swapped, anyone can mark a booking paid by calling verify with any string. Must not be deployed publicly in this state. |
+| P2 | **One settle for verify and webhook.** `_settle` locks the booking row, upserts the payment, and returns `confirmed`, `already` or `lost`. A second call (verify after webhook, or a retried webhook) returns `already`. | Exactly-one-terminal-state per payment (PRD non-functional). |
+| P3 | A payment becomes a refund (`slot_lost`) when the booking was already expired/cancelled, the grace window has passed, or confirming now would overlap another live booking of the patient. The booking turns `cancelled` by `system`; an existing refund row blocks a second one. A hold someone else already took is left alone. | Matches the contract's `SLOT_LOST_REFUNDED`. The Refund row stays `pending`: nothing calls Razorpay's refund API yet (refund work is after the milestone). |
+| P4 | `create_order` calls the gateway **outside** the booking lock, then re-locks and re-validates before saving the order. | Decision A3: a slow gateway must never hold a row lock. |
+| P5 | The webhook stores the event first (unique event id, falling back to a body hash), then processes. A processing error is saved on the event and the response is still 200; an amount mismatch writes a `reconciliation_issue`. | Razorpay retries non-2xx forever; we reconcile ourselves. |
+| P6 | Doctor approval is a Django admin action calling `VerificationService.approve`, which marks the doctor approved and generates slots in the same transaction. Reject / request-info (they need a reason form) come with the rest of admin. | The happy path was untestable without a way to approve. |
