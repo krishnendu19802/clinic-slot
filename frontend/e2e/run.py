@@ -41,6 +41,12 @@ make_doctor(phone='+919700000001', name='Dr A. Sen', fee=50000, exp=12, language
 make_doctor(phone='+919700000002', name='Dr R. Das', fee=40000, exp=7, lat='23.55', lng='87.35', area='Bidhannagar')
 """
 
+APPROVE = """
+from apps.doctors.models import DoctorProfile
+from apps.doctors.services.verification_service import VerificationService
+VerificationService().approve(profile=DoctorProfile.objects.get(user__phone='+919700000099'), actor=None)
+"""
+
 sql(f"DROP DATABASE IF EXISTS {DB}")
 sql(f"CREATE DATABASE {DB}")
 subprocess.run([py, "manage.py", "migrate", "-v0"], cwd=BACKEND, env=env, check=True)
@@ -57,7 +63,15 @@ try:
     assert up("http://127.0.0.1:8000/api/v1/policy") and up("http://127.0.0.1:5173/"), "servers did not start"
     shots = HERE / "shots"
     shots.mkdir(exist_ok=True)
-    rc = subprocess.run(["node", str(HERE / "patient.mjs"), str(shots)], cwd=HERE.parent).returncode
+    node = lambda script, *args: subprocess.run(["node", str(HERE / script), str(shots), *args], cwd=HERE.parent).returncode  # noqa: E731
+    rc = node("doctor.mjs", "onboarding")
+    if rc == 0:  # the admin approves the doctor who just submitted (the Django admin action calls this same service)
+        subprocess.run([py, "manage.py", "shell", "-c", APPROVE], cwd=BACKEND, env=env, check=True, capture_output=True)
+        subprocess.run(["redis-cli", "-n", "1", "flushdb"], capture_output=True)  # same phone logs in again: skip the 30 s OTP cooldown
+        rc = node("doctor.mjs", "schedule")
+    if rc == 0:
+        subprocess.run(["redis-cli", "-n", "1", "flushdb"], capture_output=True)
+        rc = node("patient.mjs")
 finally:
     for p in (be, fe):
         p.terminate()

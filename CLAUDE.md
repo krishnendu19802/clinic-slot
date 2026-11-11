@@ -51,6 +51,7 @@ Step-by-step with the sole developer: design (DB + API) -> FE subagent validates
 - [x] Discovery (policy, search, doctor profile, slot grid) + booking core (hold, overlap rule, details, release, active holds, list, sweeper), 71 tests incl. concurrency
 - [x] Payments (stub gateway), idempotent verify + webhook, grace/refund paths, Django admin approve; full API happy path test. **Backend side of the milestone is done (84 tests).**
 - [x] FE foundation + patient journey (home, login, results, profile + slot grid, details with countdown, payment, confirmed, my bookings); 13 unit tests + 14-step browser e2e
-- [ ] **Milestone: remaining = doctor onboarding + schedule screens.** (was: ~50% backend + FE happy path) = onboarding, clinics + schedule + slot generation, public search + slot grid, hold -> details -> Razorpay order -> verify + webhook -> confirmed. Hardcoded pieces allowed in the FE until MVP.
+- [x] FE doctor screens: onboarding (draft, documents, submit, status) + clinic and schedule (weekly hours, block day / slot, conflicts); 15 unit tests, 30-step browser e2e across doctor, admin-approval and patient journeys
+- [x] **MILESTONE REACHED (happy path, backend + FE).** (was: ~50% backend + FE happy path) (onboarding, clinics + schedule + slot generation, public search + slot grid, hold -> details -> order -> verify + webhook -> confirmed) - done.
 - [ ] After milestone: CI/CD, deployment, env setup. Then: cancel/reschedule/refunds, doctor dashboard + conflicts, notifications, Django admin actions, reconcile
 - [ ] FE

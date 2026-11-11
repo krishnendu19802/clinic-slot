@@ -8,7 +8,7 @@ React 18 + TypeScript + Vite 5 SPA, mobile-first, built from the screen designs 
 | Dev server (proxies `/api` to Django on :8000) | `npm run dev` then open http://localhost:5173 |
 | Type-check + production build | `npm run build` |
 | Unit tests (formatting, countdown, API client refresh logic) | `npm test` |
-| Browser end-to-end (needs Postgres, Redis, Chrome; makes and drops its own DB) | `npm run e2e` |
+| Browser end-to-end, 30 checks: doctor onboarding -> admin approval -> schedule -> patient booking (needs Postgres, Redis, Chrome; makes and drops its own DB, ~1 min) | `npm run e2e` |
 
 Node 18 here, so tooling is pinned to Vite 5 / React Router 6 / Vitest 2 (newer majors need Node 20).
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api/client";
 import { initials } from "../lib/format";
 
@@ -33,4 +34,13 @@ export function NeedLogin({ role, next }: { role: "patient" | "doctor"; next: st
       <Link to="/login" state={{ next, role }} className="btn primary">Log in</Link>
     </div></div>
   );
+}
+
+/** Wrap a page so only a logged-in user of `role` sees it; everyone else is told where to log in. */
+export function RequireRole({ role, children }: { role: "patient" | "doctor"; children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const { pathname } = useLocation();
+  if (loading) return <Loading />;
+  if (!user || user.role !== role) return <NeedLogin role={role} next={pathname} />;
+  return <>{children}</>;
 }

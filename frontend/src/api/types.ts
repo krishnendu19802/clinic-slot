@@ -81,3 +81,19 @@ export interface PayOrder {
   razorpay_key_id: string; razorpay_order_id: string; amount_paise: number; currency: string;
   prefill: { name: string; contact: string };
 }
+
+// ---- doctor side ----
+export interface DoctorProfileData {
+  full_name: string; gender: "" | "male" | "female" | "other"; registration_no: string; council_id: number | null;
+  degrees: string[]; specialities: number[]; experience_years: number | null; fee_paise: number | null;
+  languages: string[]; remarks: string;
+  verification_status: Verification; status_reason: string; registry_check: "passed" | "failed" | null;
+}
+export type DocType = "registration" | "degree" | "id";
+export interface DocItem { id: number; type: DocType; name: string; size_bytes: number; uploaded_at: string }
+export interface Clinic { id: number; name: string; address: string; area: string; city: string; pincode: string; lat: string; lng: string; phone: string }
+export interface ScheduleWindow { id?: number; weekday: number; start_time: string; end_time: string; slot_minutes: number; slot_count?: number }
+export interface ScheduleException { id: number; date: string; type: "blocked" | "extra"; start_time: string | null; end_time: string | null; slot_minutes: number | null }
+export interface Conflict { booking_id: number; ref: string; patient_name: string; start: string; clinic_id: number; reason: "window_removed" | "day_blocked" }
+export interface GenerationResult { slots_generated: number; conflicts: Conflict[] }
+export interface DoctorSlot { id: number; start: string; end: string; seq: number; token: number; status: "available" | "held" | "booked" | "blocked" }

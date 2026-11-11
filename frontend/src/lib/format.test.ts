@@ -26,3 +26,14 @@ describe("date helpers", () => {
   it("adds days across month ends", () => expect(addDays("2026-10-30", 3)).toBe("2026-11-02"));
   it("splits a date card", () => expect(dayParts("2026-10-19")).toEqual({ weekday: "Mon", dom: "19" }));
 });
+
+import { windowProblem, windowSlots } from "./format";
+describe("schedule helpers", () => {
+  it("lists the slots of a window like the design preview", () =>
+    expect(windowSlots("16:00", "17:00", 12)).toEqual(["4:00 pm", "4:12 pm", "4:24 pm", "4:36 pm", "4:48 pm"]));
+  it("rejects windows the server would reject", () => {
+    expect(windowProblem("16:00", "17:00", 12)).toBeNull();
+    expect(windowProblem("16:00", "17:00", 25)).toMatch(/do not divide/);
+    expect(windowProblem("17:00", "16:00", 12)).toMatch(/after start/);
+  });
+});

@@ -47,3 +47,22 @@ export function dayParts(day: string) {
   const d = new Date(`${day}T12:00:00+05:30`);
   return { weekday: fmt({ weekday: "short" }).format(d), dom: fmt({ day: "numeric" }).format(d) };
 }
+
+/** Slot start times for one window, e.g. ["4:00 pm", ...] (clinic-local "HH:MM" in, labels out). */
+export function windowSlots(start: string, end: string, minutes: number): string[] {
+  const [sh, sm] = start.split(":").map(Number), [eh, em] = end.split(":").map(Number);
+  const out: string[] = [];
+  for (let t = sh! * 60 + sm!; t + minutes <= eh! * 60 + em!; t += minutes) {
+    const h = Math.floor(t / 60), m = t % 60;
+    out.push(`${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "pm" : "am"}`);
+  }
+  return out;
+}
+
+/** null if the window is usable, else why not (mirrors the server's rules so errors show before saving). */
+export function windowProblem(start: string, end: string, minutes: number): string | null {
+  const span = (Number(end.slice(0, 2)) * 60 + Number(end.slice(3, 5))) - (Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5)));
+  if (!(span > 0)) return "End time must be after start time";
+  if (span % minutes) return `${minutes}-minute slots do not divide ${span} minutes evenly`;
+  return null;
+}

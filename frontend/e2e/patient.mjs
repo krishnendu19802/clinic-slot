@@ -32,13 +32,14 @@ await shot("1-home");
 await clickText("button", "Search");
 await waitText("Dr A. Sen");
 const results1 = await text();
-check("results list both approved doctors", results1.includes("Dr A. Sen") && results1.includes("Dr R. Das"), results1.match(/\d+ verified doctors?/)?.[0]);
+check("results list every approved doctor, including the one onboarded in this run", results1.includes("Dr A. Sen") && results1.includes("Dr R. Das") && results1.includes("Dr N. Onboard"), results1.match(/\d+ verified doctors?/)?.[0]);
 check("results show availability", /slots? left/.test(results1));
 await shot("2-results");
 await page.select("aside select:nth-of-type(1)", "dermatology").catch(() => {});
 
 // 3. profile (not logged in)
-await clickText("a", "View and book");
+await page.waitForFunction(() => [...document.querySelectorAll(".card")].some((c) => c.innerText.includes("Dr A. Sen")));
+await page.evaluate(() => [...document.querySelectorAll(".card")].find((c) => c.innerText.includes("Dr A. Sen")).querySelector('a.btn.primary').click());
 await waitText("Select date and time");
 check("profile shows clinic + schedule summary", (await text()).includes("4 to 5 pm"));
 await page.waitForFunction(() => document.querySelectorAll(".slot").length >= 5);

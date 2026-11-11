@@ -7,6 +7,8 @@ import Details from "./pages/Details";
 import DoctorProfile from "./pages/DoctorProfile";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Onboarding from "./pages/doctor/Onboarding";
+import Schedule from "./pages/doctor/Schedule";
 import Payment from "./pages/Payment";
 import Results from "./pages/Results";
 
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="book/:id/payment" element={<Payment />} />
         <Route path="book/:id/confirmed" element={<Confirmed />} />
         <Route path="bookings" element={<Bookings />} />
+        <Route path="doctor/onboarding" element={<Onboarding />} />
+        <Route path="doctor/schedule" element={<Schedule />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
