@@ -4,6 +4,7 @@ from django.db.models import Exists, OuterRef
 
 from apps.bookings.enums import OCCUPYING
 from apps.bookings.models import Booking
+from apps.scheduling.availability import open_q
 from apps.scheduling.enums import SlotStatus
 from apps.scheduling.models import Clinic, Slot
 
@@ -49,3 +50,24 @@ class SlotRepo:
         slot.held_until = None if status != SlotStatus.HELD else slot.held_until
         slot.save(update_fields=["status", "held_until"])
         return slot
+
+    def lock_by_id(self, *, slot_id: int) -> Slot | None:
+        return (Slot.objects.select_for_update(of=("self",)).select_related("clinic__doctor")
+                .filter(pk=slot_id).first())
+
+    def mark_held(self, *, slot: Slot, until: datetime, user) -> None:
+        slot.status, slot.held_until, slot.held_by = SlotStatus.HELD, until, user
+        slot.save(update_fields=["status", "held_until", "held_by"])
+
+    def release_hold(self, *, slot: Slot) -> None:
+        slot.status, slot.held_until, slot.held_by = SlotStatus.AVAILABLE, None, None
+        slot.save(update_fields=["status", "held_until", "held_by"])
+
+    def mark_booked(self, *, slot: Slot) -> None:
+        slot.status, slot.held_until, slot.held_by = SlotStatus.BOOKED, None, None
+        slot.save(update_fields=["status", "held_until", "held_by"])
+
+    def alternatives(self, *, slot: Slot, now: datetime, earliest: datetime, limit: int = 4) -> list[Slot]:
+        """Nearest bookable slots of the same clinic after this one."""
+        return list(Slot.objects.filter(open_q(prefix="", now=now, earliest=earliest), clinic=slot.clinic,
+                                        start_ts__gt=slot.start_ts).order_by("start_ts")[:limit])

@@ -67,3 +67,15 @@ Newest at the bottom of each section. Format: what we chose, why, and what it co
 | S5 | A partial block (exception with a window) skips those slots but they still count in `seq` and `token`. | Numbers stay stable for the patients and the doctor. |
 | S6 | Unblocking is `DELETE /doctor/slots/{id}/block`; blocking is `POST` on the same resource. | Default viewset actions only (A2); contract updated. |
 | S7 | Windows are normalised in the service: slot length comes from minutes, or from count (must divide evenly), or the platform default; windows that do not divide are rejected, never truncated. Overlaps on the same weekday are rejected (D3). | A doctor never gets a silent half-slot. |
+
+## Booking
+
+| # | Decision | Why / trade-off |
+|---|---|---|
+| B1 | **Lazy hold expiry is two-sided.** A slot whose `held_until` has passed counts as open everywhere (search, grid, hold). Because the lapsed booking row still occupies the partial unique index, `place_hold` first flips lapsed pending bookings on that slot to `expired`. | Correctness never waits for the sweeper. Without the flip the next patient would hit an IntegrityError on a slot that looks free. |
+| B2 | **Lock order is always user row, then slot row.** The user lock serialises one patient's overlap checks; the slot lock serialises competing patients. | A fixed order means no deadlock between two requests. The 6-thread test gets exactly one 201 and five 409s. |
+| B3 | An overlap is checked against *live* bookings only: confirmed/arrived, or a pending hold that has not expired. Replaced same-doctor holds are excluded from the check. | An abandoned hold must not block a patient's calendar. If the new hold would clash, the old one is kept (the check runs before anything is released). |
+| B4 | The Celery sweeper waits for the payment grace (2 min) before expiring a hold. The lazy path does not: if someone else takes the slot after the hold lapsed, they win and a late payment is refunded. | Matches the contract: grace applies only "if the slot is still free". |
+| B5 | `POST /bookings` is idempotent per slot (200 with the same booking, 201 for a new one). `bookings/active-holds` is registered before `bookings/{pk}` so the router does not read it as an id. | The FE can safely retry or resume after a reload. |
+| B6 | A hold that is released or replaced becomes `expired` (not `cancelled`), and any open payment order on it is expired. Release is refused with 409 `PAYMENT_IN_PROGRESS` once a payment is authorized/captured. | `cancelled` is reserved for real cancellations (shown in the Cancelled tab, refund rules apply). |
+| L8 | `r.data` in DRF tests holds Python objects for `SerializerMethodField` datetimes but strings for model-field datetimes. | Parse with `parse_datetime` before doing date maths in tests. |

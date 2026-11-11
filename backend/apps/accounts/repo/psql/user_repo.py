@@ -11,3 +11,7 @@ class UserRepo:
     def set_email(self, *, user: User, email: str | None) -> None:
         user.email = email
         user.save(update_fields=["email"])
+
+    def lock(self, *, user: User) -> User:
+        """Serialise one patient's own booking changes (overlap check) across concurrent requests."""
+        return User.objects.select_for_update().get(pk=user.pk)
