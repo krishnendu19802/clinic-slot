@@ -1,7 +1,7 @@
 from .models import AuditLog
 
 
-def log(actor, action: str, entity, **data) -> None:
+def log(*, actor, action: str, entity, **data) -> None:
     AuditLog.objects.create(
         actor=actor if getattr(actor, "pk", None) else None,
         action=action,

@@ -15,22 +15,22 @@ class AccountService:
         self.patients = patients or PatientProfileRepo()
         self.doctors = doctors or DoctorProfileRepo()
 
-    def assert_role_free(self, phone: str, role: str) -> None:
+    def assert_role_free(self, *, phone: str, role: str) -> None:
         """One phone, one role: an existing account of the other role blocks the login."""
-        user = self.users.get_by_phone(phone)
+        user = self.users.get_by_phone(phone=phone)
         if user and user.role != role:
             raise ApiError("ROLE_MISMATCH", f"This number is registered as a {user.role}")
         if user and not user.is_active:
             raise ApiError("ACCOUNT_DISABLED", "Account disabled", status_code=403)
 
     @transaction.atomic
-    def get_or_create_user(self, phone: str, role: str) -> User:
-        self.assert_role_free(phone, role)
-        user = self.users.get_by_phone(phone)
+    def get_or_create_user(self, *, phone: str, role: str) -> User:
+        self.assert_role_free(phone=phone, role=role)
+        user = self.users.get_by_phone(phone=phone)
         if user:
             return user
-        user = self.users.create(phone, role)
-        (self.patients if role == Role.PATIENT else self.doctors).create_blank(user)
+        user = self.users.create(phone=phone, role=role)
+        (self.patients if role == Role.PATIENT else self.doctors).create_blank(user=user)
         return user
 
     @staticmethod
@@ -38,12 +38,12 @@ class AccountService:
         refresh = RefreshToken.for_user(user)
         return str(refresh.access_token), str(refresh)
 
-    def update_me(self, user: User, name: str | None, email: str | None, email_given: bool) -> User:
+    def update_me(self, *, user: User, name: str | None, email: str | None, email_given: bool) -> User:
         if email_given:
-            self.users.set_email(user, email)
+            self.users.set_email(user=user, email=email)
         if name is not None:
             if user.role == Role.PATIENT:
-                self.patients.set_name(user.patient_profile, name)
+                self.patients.set_name(profile=user.patient_profile, name=name)
             else:
-                self.doctors.set_name(user.doctor_profile, name)
+                self.doctors.set_name(profile=user.doctor_profile, name=name)
         return user

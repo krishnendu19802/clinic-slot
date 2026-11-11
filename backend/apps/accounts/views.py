@@ -47,8 +47,8 @@ class OtpRequestViewSet(_PublicCreateViewSet):
         data = self.get_serializer(data=request.data)
         data.is_valid(raise_exception=True)
         phone, role = data.validated_data["phone"], data.validated_data["role"]
-        self.account.assert_role_free(phone, role)
-        return Response({"retry_after_seconds": self.otp.request(phone)})
+        self.account.assert_role_free(phone=phone, role=role)
+        return Response({"retry_after_seconds": self.otp.request(phone=phone)})
 
 
 class OtpVerifyViewSet(_PublicCreateViewSet):
@@ -60,9 +60,9 @@ class OtpVerifyViewSet(_PublicCreateViewSet):
         data = self.get_serializer(data=request.data)
         data.is_valid(raise_exception=True)
         phone, role = data.validated_data["phone"], data.validated_data["role"]
-        self.account.assert_role_free(phone, role)
-        self.otp.verify(phone, data.validated_data["otp"])
-        user = self.account.get_or_create_user(phone, role)
+        self.account.assert_role_free(phone=phone, role=role)
+        self.otp.verify(phone=phone, code=data.validated_data["otp"])
+        user = self.account.get_or_create_user(phone=phone, role=role)
         access, refresh = self.account.issue_tokens(user)
         response = Response({"access": access, "user": UserSerializer(user).data})
         _set_refresh_cookie(response, refresh)
@@ -114,5 +114,6 @@ class MeViewSet(viewsets.GenericViewSet):
         data = MeUpdateSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
-        user = self.account.update_me(request.user, v.get("name"), v.get("email"), "email" in v)
+        user = self.account.update_me(
+            user=request.user, name=v.get("name"), email=v.get("email"), email_given="email" in v)
         return Response(UserSerializer(user).data)

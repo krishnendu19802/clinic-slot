@@ -12,6 +12,7 @@ Newest at the bottom of each section. Format: what we chose, why, and what it co
 | A4 | One error envelope. Services raise `ApiError(code, **details)`. The DRF exception handler maps everything to `{error:{code,message,fields,details}}`, translating DRF codes to the contract (`NotAuthenticated` -> `TOKEN_INVALID`, `Throttled` -> `THROTTLED` + `retry_after_seconds`). | The frontend branches on `code`, so codes must be stable and come from one place. |
 | A5 | Business tunables (hold minutes, cutoff, refund window) live in `core.platform` with the defaults in code and an optional `PlatformSetting` row. | A fresh DB works with zero seed data, and admin can still override per key. |
 
+| A7 | **Keyword arguments.** Repo and service methods with parameters are keyword-only (`def f(self, *, x, y)`) and every call site passes `x=x, y=y`. | Call sites read like sentences, and swapping two same-typed arguments (two ids, two strings) becomes a TypeError instead of a silent bug. |
 | A6 | Enums live in `apps/<app>/enums.py`; models and services import from there. Constant groups tied to an enum (`OCCUPYING`, `ACTIVE` booking statuses) sit beside it. | One place to look, and services can use enums without importing models. |
 
 ## Stack and environment
@@ -51,3 +52,6 @@ Newest at the bottom of each section. Format: what we chose, why, and what it co
 | L2 | A 9-byte `SECRET_KEY` made PyJWT warn (`InsecureKeyLengthWarning`) because SimpleJWT signs with it (HS256). | Dev and example secrets must be 32+ bytes. Production must set a real one. |
 | L3 | The DB constraint tests (second occupying booking, phone/role check) pass against real Postgres, including for each of the five occupying statuses, while `cancelled` and `expired` free the slot. | The double-booking guarantee holds at the DB level with no service code involved. |
 | L4 | Refresh-token rotation is verified end to end: the rotated-out token is rejected on replay, and a logged-out token cannot refresh. | The blacklist tables from SimpleJWT work as wired. |
+| L5 | DRF's `ModelSerializer` auto-adds a `UniqueTogetherValidator` for a `UniqueConstraint`, which made `council_id` and `registration_no` required on every partial PATCH, breaking "Save draft". Fix: `validators = []` on the serializer, duplicate check in `ProfileService`, DB constraint kept as the backstop. | When a serializer behaves oddly on partial updates, look at validators generated from model constraints first. |
+| L6 | Registry simulation takes an injectable `rng`, so tests force a pass and a fail instead of relying on the 80% randomness. | Randomness in a service gets a seam. |
+| L7 | Reference data (councils, specialities) is seeded by a data migration, so every environment, including the test DB, has it. | No fixtures or management commands to forget. |
