@@ -90,3 +90,22 @@ Newest at the bottom of each section. Format: what we chose, why, and what it co
 | P4 | `create_order` calls the gateway **outside** the booking lock, then re-locks and re-validates before saving the order. | Decision A3: a slow gateway must never hold a row lock. |
 | P5 | The webhook stores the event first (unique event id, falling back to a body hash), then processes. A processing error is saved on the event and the response is still 200; an amount mismatch writes a `reconciliation_issue`. | Razorpay retries non-2xx forever; we reconcile ourselves. |
 | P6 | Doctor approval is a Django admin action calling `VerificationService.approve`, which marks the doctor approved and generates slots in the same transaction. Reject / request-info (they need a reason form) come with the rest of admin. | The happy path was untestable without a way to approve. |
+
+## Frontend
+
+| # | Decision | Why / trade-off |
+|---|---|---|
+| F1 | Vite 5 + React 18 + React Router 6 + TanStack Query 5, TypeScript strict. No UI library, one hand-written `styles.css` using the design's tokens (Manrope, blue `#2552E8`, 14-22px radii). | The machine has Node 18, which rules out Vite 6/7 and Router 7. Twelve screens do not need a component library, and the design is simple enough to match directly. |
+| F2 | The dev server proxies `/api` to Django, so the browser sees one origin. | The refresh cookie is `SameSite=Strict` and path-scoped; a second origin would break it. Production needs the same single-origin setup (reverse proxy). |
+| F3 | Session: access token in memory, boot-time `POST /auth/refresh` (a 401 just means anonymous), one shared refresh promise for parallel 401s, one retry. | Token rotation breaks parallel refreshes, so they must be serialised. Covered by unit tests. |
+| F4 | A booking is a three-step flow on three routes (`/book/:id/details`, `/payment`, `/confirmed`) driven by the booking's own status. Each page redirects to the right step, so a reload or a pasted link lands correctly. The header shows **Resume booking** with a countdown from `GET /bookings/active-holds`. | Holds survive reloads; no flow state lives only in React. |
+| F5 | **The Payment page fakes Razorpay Checkout** (`VITE_RAZORPAY_DEV`, default on): it calls `pay`, then `verify` with dev ids. It also implements the real post-pay behaviour (poll the booking for ~30 s if verify times out, `SLOT_LOST_REFUNDED` panel). | Matches the backend stub (P1). Swapping in `window.Razorpay` touches one function in `Payment.tsx`. |
+| F6 | Reschedule and Cancel buttons on the Confirmed page are visible but disabled ("Coming soon"). | The backend does not have those endpoints yet. |
+| F7 | The slot grid disables slots with `overlaps_mine` and highlights `held_by_me`; a `BOOKING_OVERLAP` error links to the conflicting booking (continue or view). | Uses the `details` payload the contract promises. |
+
+### Frontend learnings
+| # | What happened | Takeaway |
+|---|---|---|
+| L9 | The first browser run found a backend bug no test had: `POST /auth/refresh` with **no cookie** returned 400 (validation) instead of 401, so every anonymous page load logged a console error. Fixed in the view, test added. | Test the logged-out boot path; the FE hits it on every visit. |
+| L10 | `TOKEN_EXPIRED` was never produced: SimpleJWT's expired-token error code (`token_not_valid`) was not mapped, so an expired access token looked like garbage. Fixed in the exception handler, test added. | The FE's refresh logic depends on telling the two apart; check error codes against the contract end to end. |
+| L11 | A headless-Chrome run (puppeteer-core against the system Chrome) is cheap enough to keep as `npm run e2e`, and it also caught a missing favicon 404. | Keep one real-browser journey test. |

@@ -7,6 +7,7 @@ Local doctor discovery + paid appointment slot booking. Demo project (Razorpay t
 - Screens (Design canvas, 12 artboards): https://claude.ai/artifact/UFDUeXJ8sRbDVbXsUECvgQ
 
 ## Stack (decided)
+Frontend: React 18 + TypeScript + Vite 5 + React Router 6 + TanStack Query (Node 18 limits the majors). Commands in `frontend/CLAUDE.md`.
 Django + DRF + Poetry · PostgreSQL 16 · JWT (SimpleJWT: 15 min access in memory, rotating refresh in httpOnly cookie) · Redis (OTP + throttling only) · React + TypeScript + Vite (SPA) · Razorpay test mode. Celery + beat (Redis broker) for periodic jobs; OTP/confirmation sends stay synchronous, backed by a notification outbox table. Admin = Django admin (not an app role; staff users have no JWT). No PostGIS: Haversine on plain lat/lng. Design docs: `docs/db-design.md`, `docs/api/contract.md`.
 
 ## Dev shortcuts
@@ -49,6 +50,7 @@ Step-by-step with the sole developer: design (DB + API) -> FE subagent validates
 - [x] Clinics, weekly schedule, exceptions (block day / extra hours), slot generation + nightly task, manual slot block, owner day view (43 tests)
 - [x] Discovery (policy, search, doctor profile, slot grid) + booking core (hold, overlap rule, details, release, active holds, list, sweeper), 71 tests incl. concurrency
 - [x] Payments (stub gateway), idempotent verify + webhook, grace/refund paths, Django admin approve; full API happy path test. **Backend side of the milestone is done (84 tests).**
-- [ ] **Milestone: remaining = FE happy path.** (was: ~50% backend + FE happy path) = onboarding, clinics + schedule + slot generation, public search + slot grid, hold -> details -> Razorpay order -> verify + webhook -> confirmed. Hardcoded pieces allowed in the FE until MVP.
+- [x] FE foundation + patient journey (home, login, results, profile + slot grid, details with countdown, payment, confirmed, my bookings); 13 unit tests + 14-step browser e2e
+- [ ] **Milestone: remaining = doctor onboarding + schedule screens.** (was: ~50% backend + FE happy path) = onboarding, clinics + schedule + slot generation, public search + slot grid, hold -> details -> Razorpay order -> verify + webhook -> confirmed. Hardcoded pieces allowed in the FE until MVP.
 - [ ] After milestone: CI/CD, deployment, env setup. Then: cancel/reschedule/refunds, doctor dashboard + conflicts, notifications, Django admin actions, reconcile
 - [ ] FE
