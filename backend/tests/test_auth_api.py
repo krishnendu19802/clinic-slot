@@ -77,3 +77,23 @@ def test_refresh_needs_csrf_header_rotates_and_logout_blacklists(api):
     assert api.post("/api/v1/auth/logout", **H).status_code == 204
     api.cookies["refresh"] = r.cookies["refresh"].value
     assert api.post("/api/v1/auth/refresh", **H).status_code == 401
+
+
+def test_expired_and_garbage_access_tokens_have_distinct_codes(api):
+    from datetime import timedelta
+
+    from rest_framework_simplejwt.tokens import AccessToken
+
+    from apps.accounts.models import User
+    login(api)
+    token = AccessToken.for_user(User.objects.get(phone=PHONE))
+    token.set_exp(lifetime=-timedelta(minutes=1))
+    api.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    assert api.get("/api/v1/me").data["error"]["code"] == "TOKEN_EXPIRED"
+    api.credentials(HTTP_AUTHORIZATION="Bearer garbage")
+    assert api.get("/api/v1/me").data["error"]["code"] == "TOKEN_INVALID"
+
+
+def test_refresh_without_a_cookie_is_a_401_not_a_400(api):
+    r = api.post("/api/v1/auth/refresh", **H)
+    assert r.status_code == 401 and r.data["error"]["code"] == "TOKEN_INVALID"

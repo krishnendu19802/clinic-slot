@@ -28,6 +28,7 @@ def handler(exc, context):
     else:
         code = getattr(exc, "default_code", "error").upper()
         code = {"NOT_AUTHENTICATED": "TOKEN_INVALID", "AUTHENTICATION_FAILED": "TOKEN_INVALID",
+                "TOKEN_NOT_VALID": "TOKEN_EXPIRED" if "expired" in str(exc.detail).lower() else "TOKEN_INVALID",
                 "PERMISSION_DENIED": "ROLE_FORBIDDEN", "NOT_FOUND": "NOT_FOUND"}.get(code, code)
         details = {"retry_after_seconds": exc.wait} if hasattr(exc, "wait") and exc.wait else {}
         body = {"code": code, "message": str(exc.detail), "fields": {}, "details": details}

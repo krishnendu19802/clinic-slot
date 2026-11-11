@@ -75,7 +75,10 @@ class RefreshViewSet(_PublicCreateViewSet):
 
     def create(self, request, *args, **kwargs):
         _require_csrf_header(request)
-        serializer = self.get_serializer(data={"refresh": request.COOKIES.get(settings.REFRESH_COOKIE, "")})
+        cookie = request.COOKIES.get(settings.REFRESH_COOKIE)
+        if not cookie:  # anonymous visitor probing for a session at page load: a plain 401, not a validation error
+            raise ApiError("TOKEN_INVALID", "No session", status_code=401)
+        serializer = self.get_serializer(data={"refresh": cookie})
         try:
             serializer.is_valid(raise_exception=True)
         except TokenError as e:
