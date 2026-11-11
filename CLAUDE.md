@@ -9,6 +9,10 @@ Local doctor discovery + paid appointment slot booking. Demo project (Razorpay t
 ## Stack (decided)
 Django + DRF + Poetry · PostgreSQL 16 · JWT (SimpleJWT: 15 min access in memory, rotating refresh in httpOnly cookie) · Redis (OTP + throttling only) · React + TypeScript + Vite (SPA) · Razorpay test mode. Celery + beat (Redis broker) for periodic jobs; OTP/confirmation sends stay synchronous, backed by a notification outbox table. Admin = Django admin (not an app role; staff users have no JWT). No PostGIS: Haversine on plain lat/lng. Design docs: `docs/db-design.md`, `docs/api/contract.md`.
 
+## Dev shortcuts
+- `csenv` activates the backend virtualenv (alias in `~/.bashrc`; if missing: `alias csenv='source /home/krishnendu/Desktop/Codes/clinic-slot/backend/.venv/bin/activate'`). More commands in `backend/CLAUDE.md`.
+- Living docs while coding: `docs/decisions.md` (choices, learnings, challenges) and `docs/flow.md` (flow between layers). Update both whenever behaviour or structure changes.
+
 ## Layout
 - `backend/` — API, DB schema/migrations, jobs, payment/notification integrations. Role: owns all business rules.
 - `frontend/` — web app. Role: presentation only; amount, slot state and eligibility are never trusted from the client.
@@ -39,4 +43,7 @@ Step-by-step with the sole developer: design (DB + API) -> FE subagent validates
 - [x] Stack decision
 - [x] DB design + API contract drafted (v1.2)
 - [x] FE-subagent validation of contract vs screens (two passes, v1.2)
-- [ ] Build BE, then FE
+- [x] BE step 1: project, settings, all models + migrations (generated, not applied), OTP + JWT auth
+- [x] Postgres + Redis installed, migrations applied, 18 tests pass (OTP, auth API, DB constraints)
+- [ ] BE next: doctors/schedule/slots, booking + payments services, notifications, Django admin
+- [ ] FE

@@ -52,7 +52,7 @@ Auth core only. Patients and doctors sign in by OTP (JWT). Staff sign in to the 
 | `password` | text | Django hash. Unused for patients and doctors. |
 | `is_staff`, `is_superuser` | bool | Admin site access. Set with `createsuperuser`. |
 | `is_active` | bool | Checked on every request, so suspension and bans take effect immediately. |
-| `last_login_at` | timestamptz | |
+| `last_login` | timestamptz | Django's own field |
 | | | `CHECK (is_staff OR (phone IS NOT NULL AND role IS NOT NULL))` |
 
 ### `patient_profile`
@@ -122,7 +122,7 @@ Booking-time patient details are snapshotted on `booking`. Saved family profiles
 | `id` | bigint | PK |
 | `clinic_id` | bigint | FK `clinic` |
 | `weekday` | smallint | ISO 1 = Mon … 7 = Sun (same as the API) |
-| `start_time`, `end_time` | time | `CHECK (end_time > start_time)`. No overlapping windows per `(clinic_id, weekday)` (exclusion constraint, `btree_gist`). |
+| `start_time`, `end_time` | time | `CHECK (end_time > start_time)`. No overlapping windows per `(clinic_id, weekday)`, checked in the service (see `decisions.md` D3). |
 | `slot_minutes` | int | default 12. If the doctor enters a slot *count*, the API converts it (`(end - start) / count`, which must divide evenly). Breaks are simply gaps between windows. |
 
 ### `schedule_exception` (date-specific overrides)
@@ -283,7 +283,7 @@ Confirmation messages are sent synchronously after commit, with a short timeout.
 | One slot per clinic and start | `UNIQUE (slot.clinic_id, slot.start_ts)` |
 | **No double booking** | partial `UNIQUE (booking.slot_id) WHERE status IN ('pending_payment','confirmed','arrived','completed','no_show')` |
 | Fast search of open slots | partial index on `slot (start_ts) WHERE status = 'available'`, plus `(clinic_id, start_ts)` |
-| No overlapping weekly windows | exclusion constraint on `schedule_template (clinic_id, weekday, time range)` |
+| No overlapping weekly windows | service-layer validation (no built-in `timerange`, so no exclusion constraint) |
 | Idempotent webhooks | `UNIQUE webhook_event.razorpay_event_id` |
 | One gateway id, one row | `UNIQUE` on `razorpay_order_id`, `razorpay_payment_id`, `razorpay_refund_id` |
 | Unverified never public | all public queries filter `doctor_profile.verification_status = 'approved'` and `users.is_active` |
